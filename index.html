@@ -56,13 +56,12 @@
         }
 
         #map {
-            height: 500px;
+            height: 520px;
         }
 
         .leaflet-popup-content {
             text-transform: capitalize;
         }
-
 
         .psi-text {
             margin: 0;
@@ -129,9 +128,6 @@
 
                     console.log(filtered_data);
 
-                    var currentHour = moment(data.items[0].update_timestamp).format("HH");
-                    console.log(currentHour);
-
                     var mapType = 'https://maps-{s}.onemap.sg/v3/Grey/{z}/{x}/{y}.png'
 
                     // From SLA's OneMap
@@ -192,15 +188,6 @@
 
                         }
 
-                    }
-
-                    function customTip() {
-                        this.unbindTooltip();
-                        if (!this.isPopupOpen()) this.bindTooltip('Short description').openTooltip();
-                    }
-
-                    function customPop() {
-                        this.unbindTooltip();
                     }
 
                     function circleWithText(lat, long, region, psi, status, band, radius, weight, color, opacity) {
