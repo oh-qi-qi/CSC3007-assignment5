@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1.0" />
+
+    <!-- Compiled and minified CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css">
+
+    <!--Import Google Icon Font-->
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css?family=Roboto:400,700&subset=latin,cyrillic-ext" rel="stylesheet" type="text/css">
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.8.0/leaflet.css" />
+
+    <!-- JQuery DataTable Css -->
+    <link href="css/style.css" rel="stylesheet">
+
+    <!-- Compiled and minified JavaScript -->
+    <script src="https://code.jquery.com/jquery-2.1.1.min.js"></script>
+    <script src="https://momentjs.com/downloads/moment.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.8.0/leaflet.js"></script>
+
+    <title>PSI Readings Map</title>
+    <style>
+        nav {
+            background: #026AA6;
+        }
+
+        body {
+            background: #eaeaea;
+        }
+
+        .container-body {
+            margin: auto;
+            width: 90%;
+            padding: 10px;
+        }
+
+        .container-footer {
+            margin: auto;
+            width: 90%;
+            padding-left: 10px;
+            padding-top: 10px;
+            padding-bottom: 15px;
+        }
+
+        .page-footer {
+            background: #026AA6;
+        }
+
+        .map-card {
+            margin-bottom: -5px;
+        }
+
+        #map {
+            height: 500px;
+        }
+
+        .leaflet-popup-content {
+            text-transform: capitalize;
+        }
+
+
+        .psi-text {
+            margin: 0;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            font-size: 12px;
+            color: black;
+            font-weight: bold;
+            -ms-transform: translate(-50%, -50%);
+            transform: translate(-50%, -50%);
+
+        }
+
+    </style>
+</head>
+
+<body>
+    <nav role="navigation">
+    </nav>
+    <div class="container-body">
+        <!-- Start of main body -->
+        <div class="row clearfix">
+            <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12">
+                <div class="card map-card">
+                    <div class="header">
+                        <h2 id="psi-heading-timestamp"></h2>
+
+                    </div>
+                    <div class="body">
+                        <div id="map"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- End of mainbody -->
+
+    </div>
+
+    <footer class="page-footer">
+        <div class="container-footer">
+
+            Made by <a class="grey-text text-lighten-1" href="https://oh-qi-qi.github.io/CSC3007-assignment1/">Oh Qi Qi</a>
+        </div>
+    </footer>
+
+    <script>
+        $(document).ready(function() {
+
+            $.ajax({
+                url: 'https://api.data.gov.sg/v1/environment/psi',
+                method: "GET",
+                data: $('#psiDetails').serialize(),
+                dataType: "json", //to parse string into JSON object,
+                success: function(data) {
+                    //format the date
+                    var header_timestamp = document.getElementById("psi-heading-timestamp");
+                    console.log(data.items[0].update_timestamp)
+                    var datetime = moment(data.items[0].update_timestamp).format("ddd DD MMM YYYY, HH:mm")
+                    header_timestamp.innerHTML = "PSI Readings for " + datetime
+
+                    var filtered_data = data.items[0].readings.psi_twenty_four_hourly;
+                    var region_data = data.region_metadata
+
+                    console.log(filtered_data);
+
+                    var currentHour = moment(data.items[0].update_timestamp).format("HH");
+                    console.log(currentHour);
+
+                    var mapType = 'https://maps-{s}.onemap.sg/v3/Grey/{z}/{x}/{y}.png'
+
+                    // From SLA's OneMap
+                    let tiles = new L.tileLayer(mapType, {
+                        detectRetina: true,
+                        maxZoom: 18,
+                        minZoom: 11,
+                        //Do not remove this attribution
+                        attribution: '<img src="https://docs.onemap.sg/maps/images/oneMap64-01.png" style="height:20px;width:20px;">' +
+                            'New OneMap | Map data © contributors, <a href="http://SLA.gov.sg">Singapore Land Authority</a>'
+                    });
+
+
+                    let map = new L.Map('map', {
+                            center: [1.347833, 103.809357],
+                            maxBounds: L.latLngBounds(L.latLng(1.1, 103.5), L.latLng(1.5, 104.3)),
+                            // Adding maxBounds (SLA OneMap)
+                            zoom: 12
+                        })
+                        .addLayer(tiles);
+
+                    // create circle first
+                    for (let item in region_data) {
+                        var data_name = region_data[item].name
+                        var psi = filtered_data[data_name]
+                        var lat = region_data[item].label_location.latitude;
+                        var long = region_data[item].label_location.longitude;
+                        var color = "#000000";
+                        var weight = 3;
+                        var radius = psi / 2;
+                        var opacity = 0.5;
+                        var status = "";
+                        var band = 0;
+
+                        if (lat != 0 && long != 0) {
+                            console.log(region_data[item]);
+                            console.log(psi);
+
+                            if (psi >= 0 && psi <= 55) {
+                                color = "green";
+                                status = "Normal";
+                                band = 1;
+                            } else if (psi >= 56 && psi <= 150) {
+                                color = "#FFE800";
+                                status = "Elevated";
+                                band = 2;
+                            } else if (psi >= 151 && psi <= 250) {
+                                color = "#FF8701";
+                                status = "High";
+                                band = 3;
+                            } else if (psi >= 251) {
+                                color = "red";
+                                status = "Very High";
+                                band = 4;
+                            }
+
+                            var group = circleWithText(lat, long, data_name, psi, status, band, radius, weight, color, opacity).addTo(map);
+
+                        }
+
+                    }
+
+                    function customTip() {
+                        this.unbindTooltip();
+                        if (!this.isPopupOpen()) this.bindTooltip('Short description').openTooltip();
+                    }
+
+                    function customPop() {
+                        this.unbindTooltip();
+                    }
+
+                    function circleWithText(lat, long, region, psi, status, band, radius, weight, color, opacity) {
+                        var icon = L.divIcon({
+                            html: '<div class="psi-text">' + psi + '</div>',
+                            className: 'circle-with-txt',
+                            iconSize: [40, 40]
+                        });
+                        var circle = L.circleMarker([lat, long], {
+                            radius,
+                            weight,
+                            color,
+                            opacity
+                        });
+                        var marker = L.marker([lat, long], {
+                            icon: icon
+                        });
+                        marker.bindPopup('<b>Region: </b>' + data_name + '<br>' +
+                            '<b>PSI: </b>' + psi + '<br>' +
+                            '<b>Band: </b>' + band + '<br>' +
+                            '<b>Status: </b>' + status);
+                        var group = L.layerGroup([circle, marker]);
+                        return (group);
+                    }
+
+                }
+            });
+        });
+
+    </script>
+</body>
+
+</html>
