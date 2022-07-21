@@ -166,31 +166,30 @@
                             console.log(region_data[item]);
                             console.log(psi);
 
-                            if (psi >= 0 && psi <= 55) {
-                                color = "green";
-                                status = "Normal";
-                                band = 1;
-                            } else if (psi >= 56 && psi <= 150) {
-                                color = "#FFE800";
-                                status = "Elevated";
-                                band = 2;
-                            } else if (psi >= 151 && psi <= 250) {
-                                color = "#FF8701";
-                                status = "High";
-                                band = 3;
-                            } else if (psi >= 251) {
-                                color = "red";
-                                status = "Very High";
-                                band = 4;
+                            if (psi >= 0 && psi <= 50) {
+                                color = "#479b02";
+                                status = "Good";
+                            } else if (psi >= 51 && psi <= 100) {
+                                color = "#006fa1";
+                                status = "Moderate";
+                            } else if (psi >= 101 && psi <= 200) {
+                                color = "#FFCE03";
+                                status = "Unhealthy";
+                            } else if (psi >= 201 && psi <= 300) {
+                                color = "#FFA800";
+                                status = "Very Unhealthy";
+                            } else if (psi > 300) {
+                                color = "#d60000";
+                                status = "Hazardous";
                             }
 
-                            var group = circleWithText(lat, long, data_name, psi, status, band, radius, weight, color, opacity).addTo(map);
+                            var group = circleWithText(lat, long, data_name, psi, status, radius, weight, color, opacity).addTo(map);
 
                         }
 
                     }
 
-                    function circleWithText(lat, long, region, psi, status, band, radius, weight, color, opacity) {
+                    function circleWithText(lat, long, region, psi, status, radius, weight, color, opacity) {
                         var icon = L.divIcon({
                             html: '<div class="psi-text">' + psi + '</div>',
                             className: 'circle-with-txt',
@@ -207,8 +206,7 @@
                         });
                         marker.bindPopup('<b>Region: </b>' + data_name + '<br>' +
                             '<b>PSI: </b>' + psi + '<br>' +
-                            '<b>Band: </b>' + band + '<br>' +
-                            '<b>Status: </b>' + status);
+                            '<b>Air Quality Descriptor: </b>' + status);
                         var group = L.layerGroup([circle, marker]);
                         return (group);
                     }
